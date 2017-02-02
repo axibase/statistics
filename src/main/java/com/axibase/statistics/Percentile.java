@@ -5,8 +5,8 @@ import java.io.IOException;
 public class Percentile {
     private Selector selector;
 
-    public Percentile(Selector selector) {
-        this.selector = selector;
+    public Percentile(DoubleIndex index) {
+        this.selector = new QuickSelector(index);
     }
 
     public double getPercentile(double p) throws IOException {
