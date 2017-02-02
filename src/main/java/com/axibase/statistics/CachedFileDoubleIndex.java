@@ -1,5 +1,6 @@
 package com.axibase.statistics;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
@@ -12,7 +13,8 @@ public class CachedFileDoubleIndex extends DoubleIndex {
     private int pageSize, maxPages;
 
     private int length;
-    private RandomAccessFile file;
+    private File file;
+    private RandomAccessFile raf;
     private CacheNode currentPage;
     private CacheNode[] pages;
     private int cachedCount = 0, currentIndex = -1;
@@ -33,7 +35,8 @@ public class CachedFileDoubleIndex extends DoubleIndex {
     }
 
     public CachedFileDoubleIndex(String path, int pageSize, int maxPages) throws IOException {
-        file = new RandomAccessFile(path, "rw");
+        file = new File(path);
+        raf = new RandomAccessFile(path, "rw");
         this.pageSize = pageSize;
         this.maxPages = maxPages;
     }
@@ -53,7 +56,8 @@ public class CachedFileDoubleIndex extends DoubleIndex {
     }
 
     public void close() throws IOException {
-        file.close();
+        raf.close();
+        file.delete();
     }
 
     public int length() {
@@ -74,8 +78,8 @@ public class CachedFileDoubleIndex extends DoubleIndex {
         c.index = pageIndex;
         c.offset = pageIndex * pageSize;
 
-        file.seek(c.offset);
-        file.read(c.data);
+        raf.seek(c.offset);
+        raf.read(c.data);
         c.buffer = ByteBuffer.wrap(c.data);
         c.doubleBuffer = c.buffer.asDoubleBuffer();
 
@@ -133,8 +137,8 @@ public class CachedFileDoubleIndex extends DoubleIndex {
         } else
             out = currentPage;
 
-        file.seek(out.offset);
-        file.write(out.data);
+        raf.seek(out.offset);
+        raf.write(out.data);
 
 
         return out;
