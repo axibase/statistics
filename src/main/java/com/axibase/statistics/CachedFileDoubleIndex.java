@@ -10,10 +10,8 @@ class CachedFileDoubleIndex extends DoubleIndex {
     private static final int MAX_PAGES = 10;
 
     private int length;
-    private int size;
     private RandomAccessFile file;
     private CacheNode[] pages;
-    private int pageCount;
     private int cachedCount = 0;
 
     private CacheNode head, tail;
@@ -38,9 +36,8 @@ class CachedFileDoubleIndex extends DoubleIndex {
     }
 
     void completeCreation() {
-        size = length * DOUBLE_SIZE;
-
-        pageCount = (size + PAGE_SIZE) / PAGE_SIZE;
+        int size = length * DOUBLE_SIZE;
+        int pageCount = (size + PAGE_SIZE) / PAGE_SIZE;
         pages = new CacheNode[pageCount];
     }
 
@@ -116,12 +113,18 @@ class CachedFileDoubleIndex extends DoubleIndex {
     }
 
     public double get(int i) throws IOException {
+        if (i < 0 || i >= length)
+            throw new IndexOutOfBoundsException();
+
         int needPage = pageIndexOf(i);
         touchPage(needPage);
         return pages[needPage].doubleBuffer.get(i % (PAGE_SIZE / DOUBLE_SIZE));
     }
 
     public void set(int i, double v) throws IOException {
+        if (i < 0 || i >= length)
+            throw new IndexOutOfBoundsException();
+
         int needPage = pageIndexOf(i);
         touchPage(needPage);
         pages[needPage].doubleBuffer.put(i % (PAGE_SIZE / DOUBLE_SIZE), v);
