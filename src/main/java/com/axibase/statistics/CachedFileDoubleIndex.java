@@ -6,8 +6,10 @@ import java.nio.ByteBuffer;
 import java.nio.DoubleBuffer;
 
 public class CachedFileDoubleIndex extends DoubleIndex {
-    private static final int PAGE_SIZE = 1 << 16;
-    private static final int MAX_PAGES = 10;
+    private static final int DEFAULT_PAGE_SIZE = 1 << 16;
+    private static final int DEFAULT_MAX_PAGES = 10;
+
+    private int pageSize, maxPages;
 
     private int length;
     private RandomAccessFile file;
@@ -27,7 +29,13 @@ public class CachedFileDoubleIndex extends DoubleIndex {
     }
 
     public CachedFileDoubleIndex(String path) throws IOException {
+        this(path, DEFAULT_PAGE_SIZE, DEFAULT_MAX_PAGES);
+    }
+
+    public CachedFileDoubleIndex(String path, int pageSize, int maxPages) throws IOException {
         file = new RandomAccessFile(path, "rw");
+        this.pageSize = pageSize;
+        this.maxPages = maxPages;
     }
 
     public void addValue(double value) throws IOException {
@@ -39,9 +47,13 @@ public class CachedFileDoubleIndex extends DoubleIndex {
 
     public void completeCreation() {
         int size = length * DOUBLE_SIZE;
-        int pageCount = (size + PAGE_SIZE) / PAGE_SIZE;
+        int pageCount = (size + pageSize) / pageSize;
         currentPage = null;
         pages = new CacheNode[pageCount];
+    }
+
+    public void close() throws IOException {
+        file.close();
     }
 
     public int length() {
@@ -52,15 +64,15 @@ public class CachedFileDoubleIndex extends DoubleIndex {
         CacheNode c;
 
         if ((pages == null && currentPage == null) ||
-                (pages != null && cachedCount < MAX_PAGES)) {
+                (pages != null && cachedCount < maxPages)) {
             c = new CacheNode();
-            c.data = new byte[PAGE_SIZE];
+            c.data = new byte[pageSize];
         } else {
             c = dropOutdated();
         }
 
         c.index = pageIndex;
-        c.offset = pageIndex * PAGE_SIZE;
+        c.offset = pageIndex * pageSize;
 
         file.seek(c.offset);
         file.read(c.data);
@@ -129,7 +141,7 @@ public class CachedFileDoubleIndex extends DoubleIndex {
     }
 
     private CacheNode getPageFor(int i) throws IOException {
-        int needPage = i * DOUBLE_SIZE / PAGE_SIZE;
+        int needPage = i * DOUBLE_SIZE / pageSize;
         touchPage(needPage);
 
         if (pages == null)
@@ -142,13 +154,13 @@ public class CachedFileDoubleIndex extends DoubleIndex {
         if (i < 0 || i >= length)
             throw new IndexOutOfBoundsException();
 
-        return getPageFor(i).doubleBuffer.get(i % (PAGE_SIZE / DOUBLE_SIZE));
+        return getPageFor(i).doubleBuffer.get(i % (pageSize / DOUBLE_SIZE));
     }
 
     public void set(int i, double v) throws IOException {
         if (i < 0 || i >= length)
             throw new IndexOutOfBoundsException();
 
-        getPageFor(i).doubleBuffer.put(i % (PAGE_SIZE / DOUBLE_SIZE), v);
+        getPageFor(i).doubleBuffer.put(i % (pageSize / DOUBLE_SIZE), v);
     }
 }
