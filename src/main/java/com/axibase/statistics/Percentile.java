@@ -1,16 +1,20 @@
 package com.axibase.statistics;
 
-import java.io.IOException;
-
 public class Percentile {
+    private static final int PERCENTILES_COUNT = 100;
+
     private Selector selector;
 
-    public Percentile(DoubleIndex index) {
+    public Percentile(BaseDoubleIndex index) {
         this.selector = new QuickSelector(index);
     }
 
-    public double getPercentile(double p) throws IOException {
-        double selectionIndex = (p / 100) * (selector.length() + 1);
+    public double getPercentile(double p) throws IndexAccessException {
+        if (p < 0.0 || p > PERCENTILES_COUNT)
+            throw new IllegalArgumentException("Percentile index should be in range [0, " +
+                    PERCENTILES_COUNT + "]");
+
+        double selectionIndex = (p / PERCENTILES_COUNT) * (selector.length() + 1);
         int integerPart = (int) selectionIndex;
         double fractionalPart = selectionIndex - integerPart;
 

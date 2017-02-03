@@ -1,6 +1,5 @@
 package com.axibase.statistics;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -8,7 +7,7 @@ import java.util.Random;
 public class QuickSelector implements Selector {
     private final Random rand = new Random();
 
-    private DoubleIndex data;
+    private BaseDoubleIndex data;
     private BinaryNode root;
     private Map<Integer, Double> computed;
 
@@ -30,11 +29,7 @@ public class QuickSelector implements Selector {
         }
     }
 
-    public QuickSelector(DoubleIndex data) {
-        setData(data);
-    }
-
-    public void setData(DoubleIndex data) {
+    public QuickSelector(BaseDoubleIndex data) {
         this.data = data;
         root = null;
         computed = new HashMap<>();
@@ -84,7 +79,7 @@ public class QuickSelector implements Selector {
         return new Range(leftBound, rightBound);
     }
 
-    private int partition(int leftBound, int rightBound) throws IOException {
+    private int partition(int leftBound, int rightBound) throws IndexAccessException {
         double pivotElement = data.get(rightBound);
         int i = leftBound - 1;
         for (int j = leftBound; j < rightBound; j++) {
@@ -98,7 +93,7 @@ public class QuickSelector implements Selector {
         return i + 1;
     }
 
-    private int randomPartition(int leftBound, int rightBound) throws IOException {
+    private int randomPartition(int leftBound, int rightBound) throws IndexAccessException {
         if (leftBound == rightBound)
             return leftBound;
         int u = rand.nextInt(rightBound - leftBound) + leftBound;
@@ -106,7 +101,7 @@ public class QuickSelector implements Selector {
         return partition(leftBound, rightBound);
     }
 
-    private double selectInRange(int k, int leftBound, int rightBound) throws IOException {
+    private double selectInRange(int k, int leftBound, int rightBound) throws IndexAccessException {
         if (leftBound == rightBound)
             return data.get(k);
         while (true) {
@@ -125,7 +120,7 @@ public class QuickSelector implements Selector {
         }
     }
 
-    public double select(int k) throws IOException {
+    public double select(int k) throws IndexAccessException {
         if (computed.containsKey(k))
             return computed.get(k);
 

@@ -1,21 +1,9 @@
 package com.axibase.statistics;
 
-import java.io.IOException;
+public interface DoubleIndex {
+    int length();
 
-public abstract class DoubleIndex {
-    static final int DOUBLE_SIZE = 8;
+    double get(int index) throws IndexAccessException;
 
-    abstract int length();
-
-    abstract double get(int index) throws IOException;
-
-    abstract void set(int index, double value) throws IOException;
-
-    void swap(int i, int j) throws IOException {
-        if (i == j)
-            return;
-        double t = get(i);
-        set(i, get(j));
-        set(j, t);
-    }
+    void set(int index, double value) throws IndexAccessException;
 }

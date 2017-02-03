@@ -6,15 +6,15 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.DoubleBuffer;
 
-public class CachedFileDoubleIndex extends DoubleIndex {
+public class CachedFileDoubleIndex extends BaseDoubleIndex {
     private static final int DEFAULT_PAGE_SIZE = 1 << 16;
     private static final int DEFAULT_MAX_PAGES = 10;
 
     private int pageSize, maxPages;
 
     private int length;
-    private File file;
-    private RandomAccessFile raf;
+    private File indexPath;
+    private RandomAccessFile indexFile;
     private CacheNode currentPage;
     private CacheNode[] pages;
     private int cachedCount = 0, currentIndex = -1;
@@ -35,20 +35,20 @@ public class CachedFileDoubleIndex extends DoubleIndex {
     }
 
     public CachedFileDoubleIndex(String path, int pageSize, int maxPages) throws IOException {
-        file = new File(path);
-        raf = new RandomAccessFile(path, "rw");
+        this.indexPath = new File(path);
+        indexFile = new RandomAccessFile(path, "rw");
         this.pageSize = pageSize;
         this.maxPages = maxPages;
     }
 
-    public void addValue(double value) throws IOException {
+    public void addValue(double value) throws IndexAccessException {
         if (!Double.isNaN(value)) {
             length++;
             set(length - 1, value);
         }
     }
 
-    public void completeCreation() {
+    public void completeInsertion() {
         int size = length * DOUBLE_SIZE;
         int pageCount = (size + pageSize) / pageSize;
         currentPage = null;
@@ -56,8 +56,8 @@ public class CachedFileDoubleIndex extends DoubleIndex {
     }
 
     public void close() throws IOException {
-        raf.close();
-        file.delete();
+        indexFile.close();
+        indexPath.delete();
     }
 
     public int length() {
@@ -78,8 +78,8 @@ public class CachedFileDoubleIndex extends DoubleIndex {
         c.index = pageIndex;
         c.offset = pageIndex * pageSize;
 
-        raf.seek(c.offset);
-        raf.read(c.data);
+        indexFile.seek(c.offset);
+        indexFile.read(c.data);
         c.buffer = ByteBuffer.wrap(c.data);
         c.doubleBuffer = c.buffer.asDoubleBuffer();
 
@@ -137,8 +137,8 @@ public class CachedFileDoubleIndex extends DoubleIndex {
         } else
             out = currentPage;
 
-        raf.seek(out.offset);
-        raf.write(out.data);
+        indexFile.seek(out.offset);
+        indexFile.write(out.data);
 
 
         return out;
@@ -154,17 +154,27 @@ public class CachedFileDoubleIndex extends DoubleIndex {
             return pages[needPage];
     }
 
-    public double get(int i) throws IOException {
+    public double get(int i) throws IndexAccessException {
         if (i < 0 || i >= length)
             throw new IndexOutOfBoundsException();
 
-        return getPageFor(i).doubleBuffer.get(i % (pageSize / DOUBLE_SIZE));
+        double result;
+        try {
+            result = getPageFor(i).doubleBuffer.get(i % (pageSize / DOUBLE_SIZE));
+        } catch (IOException e) {
+            throw new IndexAccessException("Get value I/O error" + e.toString(), e);
+        }
+        return result;
     }
 
-    public void set(int i, double v) throws IOException {
+    public void set(int i, double v) throws IndexAccessException {
         if (i < 0 || i >= length)
             throw new IndexOutOfBoundsException();
 
-        getPageFor(i).doubleBuffer.put(i % (pageSize / DOUBLE_SIZE), v);
+        try {
+            getPageFor(i).doubleBuffer.put(i % (pageSize / DOUBLE_SIZE), v);
+        } catch (IOException e) {
+            throw new IndexAccessException("Set value I/O error" + e.toString(), e);
+        }
     }
 }
