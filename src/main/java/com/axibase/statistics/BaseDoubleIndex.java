@@ -3,7 +3,7 @@ package com.axibase.statistics;
 public abstract class BaseDoubleIndex implements DoubleIndex {
     static final int DOUBLE_SIZE = 8;
 
-    void swap(int i, int j) throws IndexAccessException {
+    public void swap(int i, int j) throws IndexAccessException {
         if (i == j)
             return;
         double t = get(i);

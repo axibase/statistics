@@ -5,7 +5,12 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.DoubleBuffer;
+import java.nio.file.Files;
 
+/**
+ * This class stores indexed double-valued data on disk
+ * and provides simple caching strategy for faster access
+ */
 public class CachedFileDoubleIndex extends BaseDoubleIndex {
     private static final int DEFAULT_PAGE_SIZE = 1 << 16;
     private static final int DEFAULT_MAX_PAGES = 10;
@@ -17,7 +22,8 @@ public class CachedFileDoubleIndex extends BaseDoubleIndex {
     private RandomAccessFile indexFile;
     private CacheNode currentPage;
     private CacheNode[] pages;
-    private int cachedCount = 0, currentIndex = -1;
+    private int cachedCount = 0;
+    private int currentIndex = -1;
 
     private CacheNode head, tail;
 
@@ -34,6 +40,14 @@ public class CachedFileDoubleIndex extends BaseDoubleIndex {
         this(path, DEFAULT_PAGE_SIZE, DEFAULT_MAX_PAGES);
     }
 
+    /**
+     * Creates a new CachedFileDoubleIndex. The new file is created if it doesn't exist,
+     * otherwise the files is overwritten
+     *
+     * @param path     the path to underlying file of this index
+     * @param pageSize the size of singe caching uint (page)
+     * @param maxPages the maximum number of pages that can be stored in memory for this index
+     */
     public CachedFileDoubleIndex(String path, int pageSize, int maxPages) throws IOException {
         this.indexPath = new File(path);
         indexFile = new RandomAccessFile(path, "rw");
@@ -41,6 +55,12 @@ public class CachedFileDoubleIndex extends BaseDoubleIndex {
         this.maxPages = maxPages;
     }
 
+    /**
+     * Adds new value at the end of index. This changes the {@link #length() length}
+     *
+     * @param value the value to append
+     * @throws IndexAccessException is thrown if the new value could not be added
+     */
     public void addValue(double value) throws IndexAccessException {
         if (!Double.isNaN(value)) {
             length++;
@@ -48,6 +68,10 @@ public class CachedFileDoubleIndex extends BaseDoubleIndex {
         }
     }
 
+    /**
+     * Completes insertion. This method should be called after all values inserted
+     * and before any element accessed
+     */
     public void completeInsertion() {
         int size = length * DOUBLE_SIZE;
         int pageCount = (size + pageSize) / pageSize;
@@ -55,15 +79,25 @@ public class CachedFileDoubleIndex extends BaseDoubleIndex {
         pages = new CacheNode[pageCount];
     }
 
+    /**
+     * Closes and removes underlying file
+     *
+     * @throws IOException if the file can't be closed or deleted
+     */
     public void close() throws IOException {
         indexFile.close();
-        indexPath.delete();
+        Files.delete(indexPath.toPath());
     }
 
+    @Override
     public int length() {
         return length;
     }
 
+    /**
+     * Loads requested page in memory, unloads old pages
+     * if <code>maxPages</code> limit is reached.
+     */
     private void load(int pageIndex) throws IOException {
         CacheNode c;
 
@@ -100,6 +134,9 @@ public class CachedFileDoubleIndex extends BaseDoubleIndex {
         }
     }
 
+    /**
+     * Update the state of requested page in cache, or load it if needed
+     */
     private void touchPage(int pageIndex) throws IOException {
         CacheNode page;
 
@@ -124,6 +161,9 @@ public class CachedFileDoubleIndex extends BaseDoubleIndex {
         }
     }
 
+    /**
+     * Remove old pages from cache
+     */
     private CacheNode dropOutdated() throws IOException {
         CacheNode out;
 
@@ -144,6 +184,9 @@ public class CachedFileDoubleIndex extends BaseDoubleIndex {
         return out;
     }
 
+    /**
+     * Get or load load requested page by index
+     */
     private CacheNode getPageFor(int i) throws IOException {
         int needPage = i * DOUBLE_SIZE / pageSize;
         touchPage(needPage);
@@ -154,19 +197,19 @@ public class CachedFileDoubleIndex extends BaseDoubleIndex {
             return pages[needPage];
     }
 
+    @Override
     public double get(int i) throws IndexAccessException {
         if (i < 0 || i >= length)
             throw new IndexOutOfBoundsException();
 
-        double result;
         try {
-            result = getPageFor(i).doubleBuffer.get(i % (pageSize / DOUBLE_SIZE));
+            return getPageFor(i).doubleBuffer.get(i % (pageSize / DOUBLE_SIZE));
         } catch (IOException e) {
             throw new IndexAccessException("Get value I/O error" + e.toString(), e);
         }
-        return result;
     }
 
+    @Override
     public void set(int i, double v) throws IndexAccessException {
         if (i < 0 || i >= length)
             throw new IndexOutOfBoundsException();

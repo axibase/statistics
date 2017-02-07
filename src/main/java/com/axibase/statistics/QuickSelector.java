@@ -4,10 +4,17 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
+/**
+ * This class implements quick selection algorithm
+ * <p>
+ * Details are described in Introduction to Algorithms, 3rd ed., ch. 9
+ * Additionally, the binary tree ihelps to reuse results from previous
+ * computations
+ */
 public class QuickSelector implements Selector {
     private final Random rand = new Random();
 
-    private BaseDoubleIndex data;
+    private DoubleIndex data;
     private BinaryNode root;
     private Map<Integer, Double> computed;
 
@@ -29,40 +36,56 @@ public class QuickSelector implements Selector {
         }
     }
 
-    public QuickSelector(BaseDoubleIndex data) {
+    /**
+     * Creates selector based on {@link DoubleIndex} as data
+     *
+     * @param data the double-value data accessed by index
+     */
+    QuickSelector(DoubleIndex data) {
         this.data = data;
         root = null;
         computed = new HashMap<>();
     }
 
+    @Override
     public int length() {
         return data.length();
     }
 
-    private void put(int k) {
+    /**
+     * Inserts the key into binary tree
+     *
+     * @param key the key to insert
+     */
+    private void put(int key) {
         if (root == null) {
-            root = new BinaryNode(k);
+            root = new BinaryNode(key);
             return;
         }
         BinaryNode current = root;
-        while (true) {
-            if (k < current.key) {
+        while (key != current.key) {
+            if (key < current.key) {
                 if (current.left == null) {
-                    current.left = new BinaryNode(k);
+                    current.left = new BinaryNode(key);
                     break;
                 } else
                     current = current.left;
-            } else if (k > current.key) {
+            } else {
                 if (current.right == null) {
-                    current.right = new BinaryNode(k);
+                    current.right = new BinaryNode(key);
                     break;
                 } else
                     current = current.right;
-            } else
-                break;
+            }
         }
     }
 
+    /**
+     * Computes restricted range for index. Using information in binary tree
+     *
+     * @param index the index of element as if array was sorted
+     * @return the smallest range where selection should be performed
+     */
     private Range getRange(int index) {
         int leftBound = 0, rightBound = data.length() - 1;
         BinaryNode current = root;
@@ -73,12 +96,21 @@ public class QuickSelector implements Selector {
             } else if (index > current.key) {
                 leftBound = current.key + 1;
                 current = current.right;
-            } else
+            } else {
                 return new Range(index, index);
+            }
         }
         return new Range(leftBound, rightBound);
     }
 
+    /**
+     * Partitions elements in range with rightmost element as pivotal
+     *
+     * @param leftBound  begin of range to partition inclusively
+     * @param rightBound end of range to partition inclusively
+     * @return index of partitioning element in range
+     * @throws IndexAccessException is thrown on index access issues
+     */
     private int partition(int leftBound, int rightBound) throws IndexAccessException {
         double pivotElement = data.get(rightBound);
         int i = leftBound - 1;
@@ -93,6 +125,16 @@ public class QuickSelector implements Selector {
         return i + 1;
     }
 
+    /**
+     * Selects pivot element randomly before partitioning.
+     * Randomness helps to avoid O(n^2) complexity if,
+     * for example, array is already sorted
+     *
+     * @param leftBound  begin of range to partition
+     * @param rightBound end of range to partition
+     * @return index of partitioning element in range
+     * @throws IndexAccessException is thrown on index access issues
+     */
     private int randomPartition(int leftBound, int rightBound) throws IndexAccessException {
         if (leftBound == rightBound)
             return leftBound;
@@ -101,6 +143,15 @@ public class QuickSelector implements Selector {
         return partition(leftBound, rightBound);
     }
 
+    /**
+     * Computes the k-th smallest element in index, searching only in restricted range
+     *
+     * @param k          the index of element as if array was sorted
+     * @param leftBound  the left bound of restricted range
+     * @param rightBound the right bound of restricted range
+     * @return the value of k-th smallest element
+     * @throws IndexAccessException is thrown on index access issues
+     */
     private double selectInRange(int k, int leftBound, int rightBound) throws IndexAccessException {
         if (leftBound == rightBound)
             return data.get(k);
@@ -120,6 +171,7 @@ public class QuickSelector implements Selector {
         }
     }
 
+    @Override
     public double select(int k) throws IndexAccessException {
         if (computed.containsKey(k))
             return computed.get(k);
