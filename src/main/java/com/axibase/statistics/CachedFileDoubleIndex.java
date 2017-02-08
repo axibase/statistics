@@ -99,37 +99,37 @@ public class CachedFileDoubleIndex extends BaseDoubleIndex {
      * if <code>maxPages</code> limit is reached.
      */
     private void load(int pageIndex) throws IOException {
-        CacheNode c;
+        CacheNode page;
 
         if ((pages == null && currentPage == null) ||
                 (pages != null && cachedCount < maxPages)) {
-            c = new CacheNode();
-            c.data = new byte[pageSize];
+            page = new CacheNode();
+            page.data = new byte[pageSize];
         } else {
-            c = dropOutdated();
+            page = dropOutdated();
         }
 
-        c.index = pageIndex;
-        c.offset = pageIndex * pageSize;
+        page.index = pageIndex;
+        page.offset = pageIndex * pageSize;
 
-        indexFile.seek(c.offset);
-        indexFile.read(c.data);
-        c.buffer = ByteBuffer.wrap(c.data);
-        c.doubleBuffer = c.buffer.asDoubleBuffer();
+        indexFile.seek(page.offset);
+        indexFile.read(page.data);
+        page.buffer = ByteBuffer.wrap(page.data);
+        page.doubleBuffer = page.buffer.asDoubleBuffer();
 
         if (pages != null) {
             if (head == null) {
-                head = tail = c;
+                head = tail = page;
             } else {
-                c.next = head;
-                head.prev = c;
-                head = c;
+                page.next = head;
+                head.prev = page;
+                head = page;
             }
 
-            pages[pageIndex] = c;
+            pages[pageIndex] = page;
             cachedCount++;
         } else {
-            currentPage = c;
+            currentPage = page;
             currentIndex = pageIndex;
         }
     }
@@ -198,24 +198,24 @@ public class CachedFileDoubleIndex extends BaseDoubleIndex {
     }
 
     @Override
-    public double get(int i) throws IndexAccessException {
-        if (i < 0 || i >= length)
+    public double get(int index) throws IndexAccessException {
+        if (index < 0 || index >= length)
             throw new IndexOutOfBoundsException();
 
         try {
-            return getPageFor(i).doubleBuffer.get(i % (pageSize / DOUBLE_SIZE));
+            return getPageFor(index).doubleBuffer.get(index % (pageSize / DOUBLE_SIZE));
         } catch (IOException e) {
             throw new IndexAccessException("Get value I/O error" + e.toString(), e);
         }
     }
 
     @Override
-    public void set(int i, double v) throws IndexAccessException {
-        if (i < 0 || i >= length)
+    public void set(int index, double value) throws IndexAccessException {
+        if (index < 0 || index >= length)
             throw new IndexOutOfBoundsException();
 
         try {
-            getPageFor(i).doubleBuffer.put(i % (pageSize / DOUBLE_SIZE), v);
+            getPageFor(index).doubleBuffer.put(index % (pageSize / DOUBLE_SIZE), value);
         } catch (IOException e) {
             throw new IndexAccessException("Set value I/O error" + e.toString(), e);
         }

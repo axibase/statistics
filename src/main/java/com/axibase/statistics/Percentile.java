@@ -13,7 +13,7 @@ public class Percentile {
      * Computes p-th percentile using estimation method described in
      * <a href="http://www.itl.nist.gov/div898/handbook/prc/section2/prc252.htm">this document</a>
      *
-     * @param p the index of percentile to compute
+     * @param  p the index of percentile to compute
      * @return the computed value for p-th percentile
      * @throws IndexAccessException is thrown if index access issue
      *                              happens during calculation
