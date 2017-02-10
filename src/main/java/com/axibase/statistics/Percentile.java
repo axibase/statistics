@@ -24,7 +24,7 @@ public class Percentile {
                     PERCENTILES_COUNT + "]");
 
         int elementsCount = selector.length();
-        double selectionIndex = (p / PERCENTILES_COUNT) * (elementsCount + 1);
+        double selectionIndex = p * (elementsCount + 1) / PERCENTILES_COUNT;
         int integerPart = (int) selectionIndex;
         double fractionalPart = selectionIndex - integerPart;
 

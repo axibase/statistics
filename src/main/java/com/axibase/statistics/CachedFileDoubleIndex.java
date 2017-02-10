@@ -72,10 +72,13 @@ public class CachedFileDoubleIndex extends BaseDoubleIndex {
      * Completes insertion. This method should be called after all values inserted
      * and before any element accessed
      */
-    public void completeInsertion() {
+    public void completeInsertion() throws IOException {
         int size = length * DOUBLE_SIZE;
         int pageCount = (size + pageSize) / pageSize;
-        currentPage = null;
+        if (currentPage != null) {
+            dropOutdated();
+            currentPage = null;
+        }
         pages = new CacheNode[pageCount];
     }
 
