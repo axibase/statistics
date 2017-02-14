@@ -11,7 +11,7 @@ import java.nio.file.Files;
  * This class stores indexed double-valued data on disk
  * and provides simple caching strategy for faster access
  */
-public class CachedFileDoubleIndex extends BaseDoubleIndex {
+public class CachedFileDoubleIndex extends BaseDoubleIndex implements AutoCloseable {
     private static final int DEFAULT_PAGE_SIZE = 1 << 16;
     private static final int DEFAULT_MAX_PAGES = 10;
 
@@ -87,6 +87,7 @@ public class CachedFileDoubleIndex extends BaseDoubleIndex {
      *
      * @throws IOException if the file can't be closed or deleted
      */
+    @Override
     public void close() throws IOException {
         indexFile.close();
         Files.delete(indexPath.toPath());
