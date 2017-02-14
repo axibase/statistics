@@ -13,33 +13,21 @@ public class CacheTest {
 
     @Test
     void testTrivial() throws IOException, IndexAccessException {
-        CachedFileDoubleIndex index = null;
-
-        try {
-            double value = 1.0;
-
-            index = new CachedFileDoubleIndex(testFileName);
+        double value = 1.0;
+        try (CachedFileDoubleIndex index = new CachedFileDoubleIndex(testFileName)) {
             index.addValue(value);
             index.completeInsertion();
 
             double got = index.get(0);
 
             assertEquals(got, value, "Incorrect value at index 0");
-        } finally {
-            if (index != null) {
-                index.close();
-            }
         }
     }
 
     @Test
     void testInitAndRead() throws IOException, IndexAccessException {
-        CachedFileDoubleIndex index = null;
-
-        try {
-            int count = 5_000_000;
-
-            index = new CachedFileDoubleIndex(testFileName);
+        int count = 5_000_000;
+        try (CachedFileDoubleIndex index = new CachedFileDoubleIndex(testFileName)) {
 
             for (int i = 0; i < count; i++)
                 index.addValue(i);
@@ -48,10 +36,6 @@ public class CacheTest {
             for (int i = 0; i < count; i++) {
                 double got = index.get(i);
                 assertEquals(got, (double) i, "Incorrect value at index " + i);
-            }
-        } finally {
-            if (index != null) {
-                index.close();
             }
         }
     }
@@ -62,11 +46,7 @@ public class CacheTest {
         Random rand = new Random(19);
         double[] values = new double[count];
 
-        CachedFileDoubleIndex index = null;
-
-        try {
-            index = new CachedFileDoubleIndex(testFileName);
-
+        try (CachedFileDoubleIndex index = new CachedFileDoubleIndex(testFileName)) {
             for (int i = 0; i < count; i++) {
                 values[i] = i;
                 index.addValue(i);
@@ -87,10 +67,6 @@ public class CacheTest {
             for (int i = 0; i < count; i++) {
                 double got = index.get(i);
                 assertEquals(got, values[i], "Incorrect value at index " + i);
-            }
-        } finally {
-            if (index != null) {
-                index.close();
             }
         }
     }
